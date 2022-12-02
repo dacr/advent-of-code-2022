@@ -43,9 +43,9 @@ object PuzzleXXTest extends ZIOSpecDefault {
     },
     test("star#2") {
       for {
-        exampleInput1 <- Helpers.readFileContent(s"data/$day-example-1.txt")
+        exampleInput1 <- Helpers.readFileContent(s"data/$day/example-1.txt")
         exampleResult1 = resolveStar2(exampleInput1)
-        puzzleInput   <- Helpers.readFileContent(s"data/$day-puzzle-1.txt")
+        puzzleInput   <- Helpers.readFileContent(s"data/$day/puzzle-1.txt")
         puzzleResult   = resolveStar2(puzzleInput)
       } yield assertTrue(
         exampleResult1 == BigInt(0),
