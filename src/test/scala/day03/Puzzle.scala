@@ -8,7 +8,7 @@ import zio.test.Assertion.*
 // ------------------------------------------------------------------------------
 case class Item(code: Char) extends AnyVal {
   def priority =
-    if (code >= 'a' && code <= 'z') code - 'a' + 1
+    if (code.isLower) code - 'a' + 1
     else code - 'A' + 27
 }
 
@@ -27,16 +27,16 @@ def parse(input: String): List[Rucksack] =
     }
 
 def resolveStar1(input: String): Int =
-  parse(input).map { rucksack =>
-    rucksack.first.intersect(rucksack.second).map(_.priority).sum
-  }.sum
+  parse(input)
+    .flatMap(rucksack => rucksack.first.intersect(rucksack.second).map(_.priority).headOption)
+    .sum
 
 // ------------------------------------------------------------------------------
 
 def resolveStar2(input: String): Int = {
   parse(input)
     .grouped(3)
-    .map(rucksacks => rucksacks.map(_.all).reduce(_ intersect _).map(_.priority).sum)
+    .flatMap(rucksacks => rucksacks.map(_.all).reduce(_ intersect _).map(_.priority).headOption)
     .sum
 }
 // ------------------------------------------------------------------------------
