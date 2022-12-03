@@ -84,7 +84,7 @@ def resolveStar2(input: String): Int = {
 }
 // ------------------------------------------------------------------------------
 
-object PuzzleTest extends ZIOSpecDefault {
+object Puzzle02Test extends ZIOSpecDefault {
   val day  = "day02"
   def spec = suite(s"puzzle $day")(
     test("star#1") {
