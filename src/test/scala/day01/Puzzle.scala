@@ -1,9 +1,9 @@
 package day01
 
-import helpers.*
 import zio.*
 import zio.test.*
-import zio.test.Assertion.*
+import zio.nio.file.Path
+import helpers.Helpers.*
 
 // ------------------------------------------------------------------------------
 
@@ -32,9 +32,9 @@ object Puzzle01Test extends ZIOSpecDefault {
   def spec = suite(s"puzzle $day")(
     test("star#1") {
       for {
-        exampleInput <- Helpers.readFileContent(s"data/$day/example-1.txt")
+        exampleInput <- fileContent(Path(s"data/$day/example-1.txt"))
         exampleResult = resolveStar1(exampleInput)
-        puzzleInput  <- Helpers.readFileContent(s"data/$day/puzzle-1.txt")
+        puzzleInput  <- fileContent(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult  = resolveStar1(puzzleInput)
       } yield assertTrue(
         exampleResult == 24000,
@@ -43,9 +43,9 @@ object Puzzle01Test extends ZIOSpecDefault {
     },
     test("star#2") {
       for {
-        exampleInput <- Helpers.readFileContent(s"data/$day/example-1.txt")
+        exampleInput <- fileContent(Path(s"data/$day/example-1.txt"))
         exampleResult = resolveStar2(exampleInput)
-        puzzleInput  <- Helpers.readFileContent(s"data/$day/puzzle-1.txt")
+        puzzleInput  <- fileContent(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult  = resolveStar2(puzzleInput)
       } yield assertTrue(
         exampleResult == 45000,

@@ -1,4 +1,4 @@
-package day03
+package day04
 
 import zio.*
 import zio.test.*
@@ -6,41 +6,19 @@ import zio.nio.file.Path
 import helpers.Helpers.*
 
 // ------------------------------------------------------------------------------
-case class Item(code: Char) extends AnyVal {
-  def priority =
-    if (code.isLower) code - 'a' + 1
-    else code - 'A' + 27
-}
-
-case class Rucksack(first: Set[Item], second: Set[Item]) {
-  val all = first ++ second
-}
-
-def parse(input: List[String]): List[Rucksack] =
-  input
-    .map { line =>
-      line.map(Item.apply).splitAt(line.size / 2) match {
-        case (first, second) => Rucksack(first.toSet, second.toSet)
-      }
-    }
 
 def resolveStar1(input: List[String]): Int =
-  parse(input)
-    .flatMap(rucksack => rucksack.first.intersect(rucksack.second).map(_.priority).headOption)
-    .sum
+  0
 
 // ------------------------------------------------------------------------------
 
-def resolveStar2(input: List[String]): Int = {
-  parse(input)
-    .grouped(3)
-    .flatMap(rucksacks => rucksacks.map(_.all).reduce(_ intersect _).map(_.priority).headOption)
-    .sum
-}
+def resolveStar2(input: List[String]): Int =
+  0
+
 // ------------------------------------------------------------------------------
 
-object Puzzle03Test extends ZIOSpecDefault {
-  val day  = "day03"
+object Puzzle04Test extends ZIOSpecDefault {
+  val day  = "day04"
   def spec = suite(s"puzzle $day")(
     test("star#1") {
       for {
@@ -49,8 +27,8 @@ object Puzzle03Test extends ZIOSpecDefault {
         puzzleInput  <- fileLines(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult  = resolveStar1(puzzleInput)
       } yield assertTrue(
-        exampleResult == 157,
-        puzzleResult == 7428
+        exampleResult == 0,
+        puzzleResult == 0
       )
     },
     test("star#2") {
@@ -60,8 +38,8 @@ object Puzzle03Test extends ZIOSpecDefault {
         puzzleInput  <- fileLines(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult  = resolveStar2(puzzleInput)
       } yield assertTrue(
-        exampleResult == 70,
-        puzzleResult == 2650
+        exampleResult == 0,
+        puzzleResult == 0
       )
     }
   )

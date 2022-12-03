@@ -2,36 +2,25 @@ package helpers
 
 import zio.*
 import zio.ZIO.*
-import java.nio.file.{Path, Files}
-import java.nio.charset.Charset
+import zio.stream.*
+import zio.nio.*
+import zio.nio.file.*
+import zio.nio.charset.*
+import zio.stream.*
 
 object Helpers {
 
-  def readResourceContent(resourceName: String, charsetName: String = "UTF-8") = {
-    for { // KO to enhance
-      inputStream <- attempt(Helpers.getClass.getResourceAsStream(resourceName))
-      bytes       <- attemptBlockingIO(inputStream.readAllBytes())
-      content     <- attempt(new String(bytes, charsetName))
-    } yield content
-  }
+  def fileLines(path: Path, charset: Charset = Charset.Standard.utf8): Task[List[String]] =
+    Files.readAllLines(path, charset)
 
-  def readPathContent(inputPath: Path, charsetName: String = "UTF-8") = for {
-    charset <- attempt(Charset.forName(charsetName))
-    content <- attemptBlockingIO(Files.readString(inputPath, charset))
-  } yield content
+  def fileLinesStream(path: Path, charset: Charset = Charset.Standard.utf8): Stream[Throwable, String] =
+    ZStream
+      .fromFile(path.toFile)
+      .via(ZPipeline.decodeStringWith(charset.javaCharset) >>> ZPipeline.splitLines)
 
-  def readFileContent(filename: String, charsetName: String = "UTF-8") = for {
-    inputPath <- attempt(Path.of(filename))
-    content   <- readPathContent(inputPath, charsetName)
-  } yield content
+  def fileContent(path: Path, charset: Charset = Charset.Standard.utf8): Task[String] = for {
+    bytes   <- Files.readAllBytes(path)
+    content <- charset.decodeChunk(bytes)
+  } yield content.mkString
 
-  def writePathContent(outputPath: Path, content: String, charsetName: String = "UTF-8") = for {
-    charset <- attempt(Charset.forName(charsetName))
-    _       <- attemptBlockingIO(Files.writeString(outputPath, content, charset))
-  } yield ()
-
-  def writeFileContent(filename: String, content: String, charsetName: String = "UTF-8") = for {
-    outputPath <- attempt(Path.of(filename))
-    _          <- writePathContent(outputPath, content, charsetName)
-  } yield ()
 }
