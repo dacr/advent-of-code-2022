@@ -8,5 +8,6 @@ Solutions
 - [day01](src/test/scala/day01/Puzzle.scala)
 - [day02](src/test/scala/day02/Puzzle.scala)
 - [day03](src/test/scala/day03/Puzzle.scala)
+- [day04](src/test/scala/day04/Puzzle.scala)
 
 Unit tests using ZIO-test.
