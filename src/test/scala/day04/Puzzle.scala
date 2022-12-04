@@ -4,16 +4,35 @@ import zio.*
 import zio.test.*
 import zio.nio.file.Path
 import helpers.Helpers.*
+import scala.util.chaining._
+
+// ------------------------------------------------------------------------------
+case class Range(from: Int, to: Int) {
+  def contains(that: Range) = from <= that.from && that.to <= to
+  def overlap(that: Range)  =
+    (from <= that.to && that.to <= to) ||
+      (from <= that.from && that.from <= to) ||
+      (that.from <= to && to <= that.to) ||
+      (that.from <= from && from <= that.to)
+}
+case class Pair(left: Range, right: Range)
+
+val parseRE = """(\d+)-(\d+),(\d+)-(\d+)""".r
+
+def parse(lines: List[String]): List[Pair] =
+  lines.collect { case parseRE(l1, l2, r1, r2) =>
+    Pair(Range(l1.toInt, l2.toInt), Range(r1.toInt, r2.toInt))
+  }
 
 // ------------------------------------------------------------------------------
 
-def resolveStar1(input: List[String]): Int =
-  0
+def resolveStar1(lines: List[String]): Int =
+  parse(lines).count { case Pair(a, b) => a.contains(b) || b.contains(a) }
 
 // ------------------------------------------------------------------------------
 
-def resolveStar2(input: List[String]): Int =
-  0
+def resolveStar2(lines: List[String]): Int =
+  parse(lines).count { case Pair(a, b) => a.overlap(b) }
 
 // ------------------------------------------------------------------------------
 
@@ -27,8 +46,8 @@ object Puzzle04Test extends ZIOSpecDefault {
         puzzleInput  <- fileLines(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult  = resolveStar1(puzzleInput)
       } yield assertTrue(
-        exampleResult == 0,
-        puzzleResult == 0
+        exampleResult == 2,
+        puzzleResult == 503
       )
     },
     test("star#2") {
@@ -38,8 +57,8 @@ object Puzzle04Test extends ZIOSpecDefault {
         puzzleInput  <- fileLines(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult  = resolveStar2(puzzleInput)
       } yield assertTrue(
-        exampleResult == 0,
-        puzzleResult == 0
+        exampleResult == 4,
+        puzzleResult == 827
       )
     }
   )
