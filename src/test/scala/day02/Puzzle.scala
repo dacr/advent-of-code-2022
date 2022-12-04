@@ -83,7 +83,7 @@ def resolveStar2(input: List[String]): Int = {
 // ------------------------------------------------------------------------------
 
 object Puzzle02Test extends ZIOSpecDefault {
-  val day  = "day02"
+  val day  = getClass.getName.replaceAll(""".*Puzzle(\d+)Test.*""", "day$1")
   def spec = suite(s"puzzle $day")(
     test("star#1") {
       for {

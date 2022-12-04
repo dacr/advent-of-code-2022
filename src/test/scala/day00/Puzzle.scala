@@ -2,8 +2,7 @@ package day00
 
 import zio.*
 import zio.test.*
-import zio.nio.file.Path
-import helpers.Helpers.*
+
 
 // ------------------------------------------------------------------------------
 def parse(input: List[String]) =
@@ -22,7 +21,9 @@ def resolveStar2(input: List[String]): BigInt =
 // ------------------------------------------------------------------------------
 
 object Puzzle00Test extends ZIOSpecDefault {
-  val day  = "day00"
+  import zio.nio.file.Path
+  import helpers.Helpers.*
+  val day  = getClass.getName.replaceAll(""".*Puzzle(\d+)Test.*""", "day$1")
   def spec = suite(s"puzzle $day")(
     test("star#1") {
       for {
