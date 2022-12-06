@@ -1,4 +1,4 @@
-package day00
+package day07
 
 import zio.*
 import zio.test.*
@@ -19,7 +19,7 @@ def resolveStar2(input: List[String]): Int =
 
 // ------------------------------------------------------------------------------
 
-object Puzzle00Test extends ZIOSpecDefault {
+object Puzzle07Test extends ZIOSpecDefault {
   import zio.nio.file.Path
   import helpers.Helpers.*
   val day  = getClass.getName.replaceAll(""".*Puzzle(\d+)Test.*""", "day$1")
