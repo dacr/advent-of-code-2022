@@ -12,4 +12,4 @@ Solutions :
 - [day04](src/test/scala/day04/Puzzle.scala) - ok
 - [day05](src/test/scala/day05/Puzzle.scala) - readability should be enhanced
 - [day06](src/test/scala/day06/Puzzle.scala) - ok
-- [day07](src/test/scala/day07/Puzzle.scala) -
+- [day07](src/test/scala/day07/Puzzle.scala) - ok - require refactoring + extract generic tree algorithm for paths / trees 
