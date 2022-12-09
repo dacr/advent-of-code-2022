@@ -34,33 +34,33 @@ def adjust(positions: List[Pos]): List[Pos] = positions match {
     val dx = (first.x - second.x) match {
       case 0                  => 0
       case delta if delta > 0 => +1
-      case delta if delta < 0 => -1
+      case _ => -1
     }
     val dy = (first.y - second.y) match {
       case 0                  => 0
       case delta if delta > 0 => +1
-      case delta if delta < 0 => -1
+      case _ => -1
     }
     first :: adjust(Pos(second.x + dx, second.y + dy) :: tail)
   case _                                                                                     => positions
 }
 
 @annotation.tailrec
-def applyMove(rope: Rope, instruction: Move, history: List[Pos]): (Rope, List[Pos]) = {
+def applyMove(rope: Rope, instruction: Move, history: Set[Pos]): (Rope, Set[Pos]) = {
   instruction match {
     case Move(_, 0)             => (rope, history)
     case Move(direction, count) =>
       val newHead = rope.positions.head.move(direction)
       val newRope = Rope(adjust(newHead :: rope.positions.tail))
       val lastPos = newRope.positions.last
-      applyMove(newRope, Move(direction, count - 1), lastPos :: history)
+      applyMove(newRope, Move(direction, count - 1), history + lastPos)
   }
 }
 
 // ------------------------------------------------------------------------------
 
 @annotation.tailrec
-def motionInAction(rope: Rope, moves: List[Move], visited: List[Pos]): List[Pos] = {
+def motionInAction(rope: Rope, moves: List[Move], visited: Set[Pos]): Set[Pos] = {
   moves match {
     case move :: remainingMoves =>
       val (updatedRope, updatedVisited) = applyMove(rope, move, visited)
@@ -74,8 +74,8 @@ def resolveStar1(input: List[String]): Int = {
   val moves     = parse(input)
   val startPos  = Pos(0, 0)
   val positions = List.fill(2)(Pos(0, 0))
-  val visited   = motionInAction(Rope(positions), moves, List(startPos))
-  visited.toSet.size
+  val visited   = motionInAction(Rope(positions), moves, Set(startPos))
+  visited.size
 }
 
 // ------------------------------------------------------------------------------
@@ -84,8 +84,8 @@ def resolveStar2(input: List[String]): Int = {
   val moves     = parse(input)
   val startPos  = Pos(0, 0)
   val positions = List.fill(10)(startPos)
-  val visited   = motionInAction(Rope(positions), moves, List(startPos))
-  visited.toSet.size
+  val visited   = motionInAction(Rope(positions), moves, Set(startPos))
+  visited.size
 }
 
 // ------------------------------------------------------------------------------
