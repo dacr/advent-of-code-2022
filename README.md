@@ -14,3 +14,4 @@ Solutions :
 - [day06](src/test/scala/day06/Puzzle.scala) - ok
 - [day07](src/test/scala/day07/Puzzle.scala) - ok - require refactoring + extract generic tree algorithm for paths / trees 
 - [day08](src/test/scala/day08/Puzzle.scala) - ok
+- [day09](src/test/scala/day09/Puzzle.scala) - ok
