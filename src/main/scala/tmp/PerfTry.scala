@@ -22,8 +22,7 @@ case class Rope(positions: List[Pos])
 def parse(input: List[String]) =
   input.map { line =>
     line.split(" ", 2) match {
-      case Array(code, n) => Move(Direction.
-        values.find(_.code == code).get, n.toInt)
+      case Array(code, n) => Move(Direction.values.find(_.code == code).get, n.toInt)
     }
   }
 
@@ -39,21 +38,21 @@ def adjust(positions: List[Pos]): List[Pos] = positions match {
 }
 
 @annotation.tailrec
-def applyMove(rope: Rope, instruction: Move, history: Set[Pos]): (Rope, Set[Pos]) = {
+def applyMove(rope: Rope, instruction: Move, history: List[Pos]): (Rope, List[Pos]) = {
   import instruction.*
   if (howMany == 0) (rope, history)
   else {
     val newHead = rope.positions.head.move(direction)
     val newRope = Rope(adjust(newHead :: rope.positions.tail))
     val lastPos = newRope.positions.last
-    applyMove(newRope, Move(direction, howMany - 1), history + lastPos)
+    applyMove(newRope, Move(direction, howMany - 1), lastPos::history)
   }
 }
 
 // ------------------------------------------------------------------------------
 
 @annotation.tailrec
-def motionInAction(rope: Rope, moves: List[Move], visited: Set[Pos]): Set[Pos] = {
+def motionInAction(rope: Rope, moves: List[Move], visited: List[Pos]): List[Pos] = {
   if (moves.isEmpty) visited
   else {
     val (updatedRope, updatedVisited) = applyMove(rope, moves.head, visited)
@@ -65,8 +64,8 @@ def resolveStar1(input: List[String]): Int = {
   val moves     = parse(input)
   val startPos  = Pos(0, 0)
   val positions = List.fill(2)(Pos(0, 0))
-  val visited   = motionInAction(Rope(positions), moves, Set(startPos))
-  visited.size
+  val visited   = motionInAction(Rope(positions), moves, List(startPos))
+  visited.distinct.size
 }
 
 // ------------------------------------------------------------------------------
@@ -75,11 +74,11 @@ def resolveStar2(input: List[String]): Int = {
   val moves     = parse(input)
   val startPos  = Pos(0, 0)
   val positions = List.fill(10)(startPos)
-  val visited   = motionInAction(Rope(positions), moves, Set(startPos))
-  visited.size
+  val visited   = motionInAction(Rope(positions), moves, List(startPos))
+  visited.distinct.size
 }
 
-object NativeTry {
+object PerfTry {
 
   val day = "day09"
 
@@ -89,16 +88,22 @@ object NativeTry {
     import java.io.File
     import scala.jdk.CollectionConverters.*
 
-    val started       = System.currentTimeMillis
-    val puzzleInput   = readAllLines(File(s"data/$day/puzzle-1.txt").toPath)
-    val puzzleResult  = resolveStar2(puzzleInput.asScala.toList)
-    val ended         = System.currentTimeMillis
 
-    System.out.println(s"In ${ended - started}ms")
+    1.to(4000).foreach { i =>
+      val puzzleInput = readAllLines(File(s"data/$day/puzzle-1.txt").toPath).asScala.toList
+      val puzzleResult = resolveStar2(puzzleInput)
+      assert(puzzleResult == 2327)
+    }
 
-    assert(
-        puzzleResult == 2327
-    )
+    val started       = System.nanoTime()
+    val puzzleInput = readAllLines(File(s"data/$day/puzzle-1.txt").toPath).asScala.toList
+    val puzzleResult = resolveStar2(puzzleInput)
+    val ended         = System.nanoTime()
+    val duration      = (ended - started).toDouble / 1000L
+    System.out.println(s"In ${duration}µs - $puzzleResult")
+    assert(puzzleResult == 2327)
+
+
   }
 
 }
