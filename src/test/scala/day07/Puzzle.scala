@@ -2,6 +2,7 @@ package day07
 
 import zio.*
 import zio.test.*
+import zio.test.TestAspect.*
 
 // ------------------------------------------------------------------------------
 sealed trait Tree[T]
@@ -131,5 +132,5 @@ object Puzzle07Test extends ZIOSpecDefault {
         puzzleResult == 1544176L
       )
     }
-  )
+  ) @@ timed
 }

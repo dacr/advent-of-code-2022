@@ -2,6 +2,7 @@ package day08
 
 import zio.*
 import zio.test.*
+import zio.test.TestAspect.*
 
 case class Tree(height: Int) extends AnyVal
 case class Forest(trees: Chunk[Chunk[Tree]]) {
@@ -114,5 +115,5 @@ object Puzzle08Test extends ZIOSpecDefault {
         puzzleResult == 383520
       )
     }
-  )
+  ) @@ timed
 }

@@ -3,6 +3,7 @@ package day02
 import zio.*
 import zio.test.*
 import zio.nio.file.Path
+import zio.test.TestAspect.*
 import helpers.Helpers.*
 
 // ------------------------------------------------------------------------------
@@ -107,5 +108,5 @@ object Puzzle02Test extends ZIOSpecDefault {
         puzzleResult == 12382
       )
     }
-  )
+  ) @@ timed
 }

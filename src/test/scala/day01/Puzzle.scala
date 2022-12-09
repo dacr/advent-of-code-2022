@@ -4,6 +4,7 @@ import zio.*
 import zio.test.*
 import zio.nio.file.Path
 import helpers.Helpers.*
+import zio.test.TestAspect.*
 
 // ------------------------------------------------------------------------------
 
@@ -52,5 +53,5 @@ object Puzzle01Test extends ZIOSpecDefault {
         puzzleResult == 199172
       )
     }
-  )
+  ) @@ timed
 }

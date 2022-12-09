@@ -5,6 +5,7 @@ import zio.test.*
 import zio.nio.file.Path
 import helpers.Helpers.*
 import scala.util.chaining._
+import zio.test.TestAspect.*
 
 // ------------------------------------------------------------------------------
 case class Range(from: Int, to: Int) {
@@ -61,5 +62,5 @@ object Puzzle04Test extends ZIOSpecDefault {
         puzzleResult == 827
       )
     }
-  )
+  ) @@ timed
 }

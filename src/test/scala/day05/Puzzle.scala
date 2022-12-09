@@ -3,6 +3,7 @@ package day05
 import zio.*
 import zio.test.*
 import scala.util.chaining._
+import zio.test.TestAspect.*
 
 // ------------------------------------------------------------------------------
 case class Crate(mark: String) extends AnyVal {
@@ -104,5 +105,5 @@ object Puzzle05Test extends ZIOSpecDefault {
         puzzleResult == "CJVLJQPHS"
       )
     }
-  )
+  ) @@ timed
 }

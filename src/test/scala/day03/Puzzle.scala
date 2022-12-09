@@ -4,6 +4,7 @@ import zio.*
 import zio.test.*
 import zio.nio.file.Path
 import helpers.Helpers.*
+import zio.test.TestAspect.*
 
 // ------------------------------------------------------------------------------
 case class Item(code: Char) extends AnyVal {
@@ -64,5 +65,5 @@ object Puzzle03Test extends ZIOSpecDefault {
         puzzleResult == 2650
       )
     }
-  )
+  ) @@ timed
 }

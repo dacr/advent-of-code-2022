@@ -2,6 +2,7 @@ package day06
 
 import zio.*
 import zio.test.*
+import zio.test.TestAspect.*
 
 def findMarker(input: String, ofLength: Int): Int =
   input
@@ -55,5 +56,5 @@ object Puzzle06Test extends ZIOSpecDefault {
         puzzleResult == 3716
       )
     }
-  )
+  ) @@ timed
 }

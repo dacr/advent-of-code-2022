@@ -2,6 +2,7 @@ package day00
 
 import zio.*
 import zio.test.*
+import zio.test.TestAspect.*
 
 // ------------------------------------------------------------------------------
 def parse(input: List[String]) =
@@ -46,5 +47,5 @@ object Puzzle00Test extends ZIOSpecDefault {
         puzzleResult == 0
       )
     }
-  )
+  ) @@ timed
 }
