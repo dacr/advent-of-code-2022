@@ -29,31 +29,25 @@ def parse(input: List[String]) =
   }
 
 // ------------------------------------------------------------------------------
+
 def adjust(positions: List[Pos]): List[Pos] = positions match {
   case first :: second :: tail if abs(first.x - second.x) > 1 || abs(first.y - second.y) > 1 =>
-    val dx = (first.x - second.x) match {
-      case 0                  => 0
-      case delta if delta > 0 => +1
-      case _ => -1
-    }
-    val dy = (first.y - second.y) match {
-      case 0                  => 0
-      case delta if delta > 0 => +1
-      case _ => -1
-    }
+    val dx = math.signum(first.x - second.x)
+    val dy = math.signum(first.y - second.y)
     first :: adjust(Pos(second.x + dx, second.y + dy) :: tail)
-  case _                                                                                     => positions
+
+  case _ => positions
 }
 
 @annotation.tailrec
 def applyMove(rope: Rope, instruction: Move, history: Set[Pos]): (Rope, Set[Pos]) = {
-  instruction match {
-    case Move(_, 0)             => (rope, history)
-    case Move(direction, count) =>
-      val newHead = rope.positions.head.move(direction)
-      val newRope = Rope(adjust(newHead :: rope.positions.tail))
-      val lastPos = newRope.positions.last
-      applyMove(newRope, Move(direction, count - 1), history + lastPos)
+  import instruction.*
+  if (howMany == 0) (rope, history)
+  else {
+    val newHead = rope.positions.head.move(direction)
+    val newRope = Rope(adjust(newHead :: rope.positions.tail))
+    val lastPos = newRope.positions.last
+    applyMove(newRope, Move(direction, howMany - 1), history + lastPos)
   }
 }
 
@@ -61,12 +55,10 @@ def applyMove(rope: Rope, instruction: Move, history: Set[Pos]): (Rope, Set[Pos]
 
 @annotation.tailrec
 def motionInAction(rope: Rope, moves: List[Move], visited: Set[Pos]): Set[Pos] = {
-  moves match {
-    case move :: remainingMoves =>
-      val (updatedRope, updatedVisited) = applyMove(rope, move, visited)
-      motionInAction(updatedRope, remainingMoves, updatedVisited)
-
-    case Nil => visited
+  if (moves.isEmpty) visited
+  else {
+    val (updatedRope, updatedVisited) = applyMove(rope, moves.head, visited)
+    motionInAction(updatedRope, moves.tail, updatedVisited)
   }
 }
 
