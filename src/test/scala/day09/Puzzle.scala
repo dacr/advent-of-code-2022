@@ -32,8 +32,8 @@ def parse(input: List[String]) =
 
 def adjust(positions: List[Pos]): List[Pos] = positions match {
   case first :: second :: tail if abs(first.x - second.x) > 1 || abs(first.y - second.y) > 1 =>
-    val dx = math.signum(first.x - second.x)
-    val dy = math.signum(first.y - second.y)
+    val dx = signum(first.x - second.x)
+    val dy = signum(first.y - second.y)
     first :: adjust(Pos(second.x + dx, second.y + dy) :: tail)
 
   case _ => positions
