@@ -7,40 +7,24 @@ import zio.test.TestAspect.*
 
 type Numeric = Int
 
-sealed trait Operation
-case class Noop()               extends Operation
-case class AddX(value: Numeric) extends Operation
-
-object Operation {
-  lazy val noop = Noop()
-}
-
 // ------------------------------------------------------------------------------
-def parse(lines: List[String]): List[Operation] =
+def parse(lines: List[String]): List[Numeric] =
   lines
     .map(line => line.split(" ", 2))
-    .collect {
-      case a if a.length == 1 => Operation.noop
-      case Array(_, value)    => AddX(value.toInt)
+    .flatMap {
+      case a if a.length == 1 => List(0)
+      case Array(_, value)    => List(0, value.toInt)
     }
 
-def registerStream(operations: Iterable[Operation]) = {
-  ZStream
-    .fromIterable(operations)
-    .forever
-    .flatMap {
-      case Noop()    => ZStream(0)
-      case AddX(inc) => ZStream(0, inc)
-    }
-    .scan(1 -> 1) { case ((cycle, value), inc) => (cycle + 1) -> (value + inc) }
-}
 // ------------------------------------------------------------------------------
 
 def resolveStar1(lines: List[String]) = {
-  val operations = parse(lines)
-  val cycles     = Set(20, 60, 100, 140, 180, 220)
+  val cycles = Set(20, 60, 100, 140, 180, 220)
 
-  registerStream(operations)
+  ZStream
+    .fromIterable(parse(lines))
+    .forever
+    .scan(1 -> 1) { case ((cycle, value), inc) => (cycle + 1) -> (value + inc) }
     .collect { case (cycle, value) if cycles.contains(cycle) => cycle * value }
     .take(cycles.size)
     .runSum
@@ -52,8 +36,11 @@ def inRange(registerValue: Numeric, pixelNum: Int): String = {
 }
 
 def resolveStar2(lines: List[String]) =
-  registerStream(parse(lines))
-    .map((cycle, value) => value)
+  ZStream
+    .fromIterable(parse(lines))
+    .forever
+    .scan(1 -> 1) { case ((cycle, value), inc) => (cycle + 1) -> (value + inc) }
+    .map((_, value) => value)
     .grouped(40)
     .map(line => line.zipWithIndex.map(inRange).mkString)
     .take(6)
