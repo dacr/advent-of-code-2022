@@ -5,9 +5,53 @@ import zio.test.*
 import zio.test.TestAspect.*
 
 // ------------------------------------------------------------------------------
-sealed trait Tree[T]
-case class Leaf[T](content: T)                            extends Tree[T]
-case class Node[T](name: String, children: List[Tree[T]]) extends Tree[T]
+sealed trait Tree[K, T] {
+  val key: K
+}
+
+case class Leaf[K, T](key: K, content: T) extends Tree[K, T]
+
+case class Node[K, T](key: K, children: Set[Tree[K, T]] = Set.empty) extends Tree[K, T] {
+  def isLeaf = children.isEmpty
+}
+
+def pathsToTree[K, T](paths: List[(List[K], T)], rootKey: K): Tree[K, T] = {
+  def worker(paths: List[(List[K], T)], currentKey: K): Tree[K, T] = {
+//    val children =
+//      paths
+//        .groupMap { case (path, _) => path.headOption } { case (path, content) => path.drop(1) -> content }
+//        .collect { case (Some(key), subpaths) => }
+//
+//    Node(currentKey, children.toSet)
+// TO BE CONTINUED
+
+    paths.partition { case (path, _) => path.size <= 1 } match {
+      case (leafPaths, nodePaths) =>
+        val nodeChildren: List[Tree[K, T]] =
+          nodePaths
+            .groupBy { case (path, _) => path.head }
+            .map { case (key, subpaths) => key -> subpaths.map { case (path, item) => path.tail -> item } }
+            .map { case (key, subpaths) => worker(subpaths, key) }
+            .toList
+        val leafChildren: List[Tree[K, T]] = leafPaths.collect { case (key :: Nil, item) => Leaf(key, item) }
+        Node(currentKey, children = nodeChildren.toSet ++ leafChildren)
+    }
+  }
+  worker(paths, rootKey)
+}
+
+def treeToPaths[K, T](tree: Tree[K, T], ignoreRootKey: Boolean = true): List[(List[K], T)] = {
+  def worker(subtrees: List[Tree[K, T]], currentPath: List[K]): List[(List[K], T)] = {
+    subtrees.flatMap {
+      case Leaf(key, content)  => List((key :: currentPath).reverse -> content)
+      case Node(key, children) => worker(children.toList, key :: currentPath)
+    }
+  }
+  tree match {
+    case Leaf(key, content)  => List((key :: Nil) -> content)
+    case Node(key, children) => worker(children.toList, if (ignoreRootKey) Nil else key :: Nil)
+  }
+}
 
 // ------------------------------------------------------------------------------
 sealed trait Item
@@ -38,43 +82,29 @@ def buildPaths(instructions: List[String], currentPath: Path, filesByPath: List[
   }
 }
 
-def pathsToTree[T](currentName: Option[String], paths: List[(Path, T)]): Tree[T] = {
-  paths.partition { case (path, _) => path.isEmpty } match {
-    case (emptyPaths, otherPaths) =>
-      val nodeChildren: List[Tree[T]] =
-        otherPaths
-          .groupBy { case (path, _) => path.head }
-          .map { case (key, subpaths) => key -> subpaths.map { case (path, item) => path.tail -> item } }
-          .map { case (key, subpaths) => pathsToTree(Some(key), subpaths) }
-          .toList
-      val leafChildren: List[Tree[T]] = emptyPaths.map { case (_, item) => Leaf(item) }
-      Node(currentName.getOrElse("ROOT"), children = nodeChildren ::: leafChildren)
-  }
-}
-
 def parse(input: List[String]) =
   val paths = buildPaths(input, Nil, Nil)
-  val tree  = pathsToTree(None, paths)
+  val tree  = pathsToTree(paths, "root")
   tree
 
 // ------------------------------------------------------------------------------
 
-def du(tree: Tree[Item]): Long = {
+def du(tree: Tree[String, Item]): Long = {
   tree match {
-    case Node(name, children) => children.map(du).sum
-    case Leaf(file: File)     => file.size
-    case Leaf(dir: Directory) => 0L // TODO
+    case Node(name, children)       => children.map(du).sum
+    case Leaf(name, file: File)     => file.size
+    case Leaf(name, dir: Directory) => 0L // TODO
   }
 }
 
-def searchCappedSize(tree: Tree[Item]): List[Long] = {
+def searchCappedSize(tree: Tree[String, Item]): List[Long] = {
   tree match {
-    case Leaf(file: File)     => Nil
-    case Leaf(dir: Directory) => Nil // TODO
-    case Node(name, children) =>
+    case Leaf(name, file: File)     => Nil
+    case Leaf(name, dir: Directory) => Nil // TODO
+    case Node(name, children)       =>
       val currentSize = du(tree)
-      if (currentSize > 100000L) children.flatMap(searchCappedSize)
-      else currentSize :: children.flatMap(searchCappedSize)
+      if (currentSize > 100000L) children.toList.flatMap(searchCappedSize)
+      else currentSize :: children.toList.flatMap(searchCappedSize)
   }
 }
 
@@ -84,24 +114,22 @@ def resolveStar1(input: List[String]): Long =
 
 // ------------------------------------------------------------------------------
 
-def dirSizes(tree: Tree[Item]): List[(String, Long)] = {
+def dirSizes(tree: Tree[String, Item]): List[(String, Long)] = {
   tree match {
-    case Leaf(file: File)     => Nil
-    case Leaf(dir: Directory) => Nil // TODO
-    case Node(name, children) =>
-      (name -> du(tree)) :: children.flatMap(dirSizes)
+    case Leaf(name, file: File)     => Nil
+    case Leaf(name, dir: Directory) => Nil // TODO
+    case Node(name, children)       =>
+      (name -> du(tree)) :: children.toList.flatMap(dirSizes)
   }
 }
-def resolveStar2(input: List[String]): Long          =
-  val tree  = parse(input)
-  val sizes = dirSizes(tree)
+def resolveStar2(input: List[String]): Long                  =
+  val tree   = parse(input)
+  val sizes  = dirSizes(tree)
   val duRoot = du(tree)
   sizes
-    .filter((name, size) => 70_000_000L-duRoot+size >= 30_000_000L)
-    .map{case (name, size) => size}
+    .filter((name, size) => 70_000_000L - duRoot + size >= 30_000_000L)
+    .map { case (name, size) => size }
     .min
-
-
 
 // ------------------------------------------------------------------------------
 
@@ -110,6 +138,19 @@ object Puzzle07Test extends ZIOSpecDefault {
   import helpers.Helpers.*
   val day  = getClass.getName.replaceAll(""".*Puzzle(\d+)Test.*""", "day$1")
   def spec = suite(s"puzzle $day")(
+    suite("paths and trees test") {
+      test("paths to tree") {
+        val paths = List(
+          (1 :: 1 :: Nil) -> "A",
+          (1 :: 2 :: Nil) -> "B"
+        )
+        val tree  = Node("root", Set(Node(1, Set(Leaf(1, "A"), Leaf(2, "B")))))
+        assertTrue(
+          pathsToTree(paths, "root") == tree,
+          treeToPaths(tree) == paths
+        )
+      }
+    },
     test("star#1") {
       for {
         exampleInput <- fileLines(Path(s"data/$day/example-1.txt"))
