@@ -42,9 +42,8 @@ def resolveStar1_alt2(lines: Stream[Throwable, String]) = {
 }
 // ------------------------------------------------------------------------------
 
-def inRange(registerValue: Numeric, pixelNum: Int): String = {
+def inRange(registerValue: Numeric, pixelNum: Int): String =
   if (registerValue - 1 <= pixelNum && pixelNum <= registerValue + 1) "#" else "."
-}
 
 def resolveStar2(lines: Stream[Throwable, String]) =
   lines
