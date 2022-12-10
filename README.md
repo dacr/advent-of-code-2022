@@ -3,7 +3,6 @@ My solutions using scala3, with some coding rules :
 - no side effects,
 - no mutable data structure,
 - readable, maintainable and easily understandable,
-- only with the standard library except for ZIO-test used for unit testing.
 
 Solutions :
 - [day01](src/test/scala/day01/Puzzle.scala) - ok
@@ -15,3 +14,5 @@ Solutions :
 - [day07](src/test/scala/day07/Puzzle.scala) - ok - require refactoring + extract generic tree algorithm for paths / trees 
 - [day08](src/test/scala/day08/Puzzle.scala) - ok
 - [day09](src/test/scala/day09/Puzzle.scala) - ok
+- [day10](src/test/scala/day10/Puzzle.scala) - ok - using ZStream
+
