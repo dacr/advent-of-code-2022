@@ -108,5 +108,5 @@ object Puzzle02Test extends ZIOSpecDefault {
         puzzleResult == 12382
       )
     }
-  ) @@ timed
+  ) @@ timed @@ sequential
 }

@@ -42,7 +42,7 @@ object Puzzle04Test extends ZIOSpecDefault {
   def spec = suite(s"puzzle $day")(
     test("star#1") {
       for {
-        exampleInput <- fileLines(Path(s"data/$day/example-1.txt"))
+        exampleInput <- fileLines(Path("data/$day/example-1.txt"))
         exampleResult = resolveStar1(exampleInput)
         puzzleInput  <- fileLines(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult  = resolveStar1(puzzleInput)
@@ -62,5 +62,5 @@ object Puzzle04Test extends ZIOSpecDefault {
         puzzleResult == 827
       )
     }
-  ) @@ timed
+  ) @@ timed @@ sequential
 }
