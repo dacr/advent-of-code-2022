@@ -78,7 +78,7 @@ object Puzzle10Test extends ZIOSpecDefault {
       for {
         exampleResult1 <- resolveStar2(fileLinesStream(Path(s"data/$day/example-1.txt")))
         puzzleResult   <- resolveStar2(fileLinesStream(Path(s"data/$day/puzzle-1.txt")))
-        _              <- Console.printLine(puzzleResult)
+        //_              <- Console.printLine(puzzleResult)
       } yield assertTrue(
         exampleResult1 ==
           """##..##..##..##..##..##..##..##..##..##..
