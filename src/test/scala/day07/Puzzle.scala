@@ -15,17 +15,24 @@ case class Node[K, T](key: K, children: Set[Tree[K, T]] = Set.empty) extends Tre
   def isLeaf = children.isEmpty
 }
 
-def pathsToTree[K, T](paths: List[(List[K], T)], rootKey: K): Tree[K, T] = {
-  def worker(paths: List[(List[K], T)], currentKey: K): Tree[K, T] = {
-//    val children =
-//      paths
-//        .groupMap { case (path, _) => path.headOption } { case (path, content) => path.drop(1) -> content }
-//        .collect { case (Some(key), subpaths) => }
-//
-//    Node(currentKey, children.toSet)
-// TO BE CONTINUED
-
-    paths.partition { case (path, _) => path.size <= 1 } match {
+/** Build a tree from a list of tuple made of path and content. The path must contain both the node keys and the leaf key.
+  *
+  * @param pathContentTuples
+  *   the list of path/content tuple - <b>all path must at least contain one key</b>
+  * @param rootKey
+  *   the key used for the tree root
+  * @tparam K
+  *   the data type used for node key
+  * @tparam T
+  *   the data type used for content
+  * @return
+  *   the built tree
+  * @author
+  *   David Crosson
+  */
+def pathsToTree[K, T](pathContentTuples: List[(List[K], T)], rootKey: K): Tree[K, T] = {
+  def worker(PathContentTuples: List[(List[K], T)], currentKey: K): Tree[K, T] = {
+    PathContentTuples.partition { case (path, _) => path.size == 1 } match {
       case (leafPaths, nodePaths) =>
         val nodeChildren: List[Tree[K, T]] =
           nodePaths
@@ -37,9 +44,24 @@ def pathsToTree[K, T](paths: List[(List[K], T)], rootKey: K): Tree[K, T] = {
         Node(currentKey, children = nodeChildren.toSet ++ leafChildren)
     }
   }
-  worker(paths, rootKey)
+  worker(pathContentTuples, rootKey)
 }
 
+/** Build the list of all possible path and content tuples from a tree
+  *
+  * @param tree
+  *   the tree to walk though in order to be build possible paths
+  * @param ignoreRootKey
+  *   do not insert the root key on generated paths
+  * @tparam K
+  *   the data type used for node key
+  * @tparam T
+  *   the data type used for content
+  * @return
+  *   the built list of path/content tuples
+  * @author
+  *   David Crosson
+  */
 def treeToPaths[K, T](tree: Tree[K, T], ignoreRootKey: Boolean = true): List[(List[K], T)] = {
   def worker(subtrees: List[Tree[K, T]], currentPath: List[K]): List[(List[K], T)] = {
     subtrees.flatMap {
@@ -76,9 +98,10 @@ def buildPaths(instructions: List[String], currentPath: Path, filesByPath: List[
     case Some(commandParentDirRE())     => buildPaths(instructions.tail, currentPath.tail, filesByPath)
     case Some(commandChangeDirRE(name)) => buildPaths(instructions.tail, name :: currentPath, filesByPath)
     case Some(commandListRE())          => buildPaths(instructions.tail, currentPath, filesByPath)
-    case Some(itemFileRE(size, name))   => buildPaths(instructions.tail, currentPath, (currentPath -> File(name, size.toInt)) :: filesByPath)
-    case Some(itemDirRE(name))          => buildPaths(instructions.tail, currentPath, (currentPath -> Directory(name)) :: filesByPath)
-    case None                           => filesByPath.map { case (path, item) => path.reverse -> item }
+    case Some(itemFileRE(size, name))   => buildPaths(instructions.tail, currentPath, ((name :: currentPath) -> File(name, size.toInt)) :: filesByPath)
+    // case Some(itemDirRE(name))          => buildPaths(instructions.tail, currentPath, ((name :: currentPath) -> Directory(name)) :: filesByPath)
+    case Some(itemDirRE(name))          => buildPaths(instructions.tail, currentPath, filesByPath)
+    case _                              => filesByPath.map { case (path, item) => path.reverse -> item }
   }
 }
 
@@ -138,8 +161,29 @@ object Puzzle07Test extends ZIOSpecDefault {
   import helpers.Helpers.*
   val day  = getClass.getName.replaceAll(""".*Puzzle(\d+)Test.*""", "day$1")
   def spec = suite(s"puzzle $day")(
-    suite("paths and trees test") {
-      test("paths to tree") {
+    suite("paths and trees test")(
+      // -------------------------------------------------
+      test("just a leaf") {
+        val paths = List((1 :: Nil) -> "A")
+        val tree  = Node(0, Set(Leaf(1, "A")))
+        assertTrue(
+          pathsToTree(paths, 0) == tree,
+          treeToPaths(tree) == paths
+        )
+      },
+      // -------------------------------------------------
+      test("one path to tree") {
+        val paths = List(
+          (1 :: 1 :: 1 :: Nil) -> "A"
+        )
+        val tree  = Node(0, Set(Node(1, Set(Node(1, Set(Leaf(1, "A")))))))
+        assertTrue(
+          pathsToTree(paths, 0) == tree,
+          treeToPaths(tree) == paths
+        )
+      },
+      // -------------------------------------------------
+      test("fixed size paths to tree") {
         val paths = List(
           (1 :: 1 :: Nil) -> "A",
           (1 :: 2 :: Nil) -> "B"
@@ -150,7 +194,8 @@ object Puzzle07Test extends ZIOSpecDefault {
           treeToPaths(tree) == paths
         )
       }
-    },
+    ),
+    // ======================================================
     test("star#1") {
       for {
         exampleInput <- fileLines(Path(s"data/$day/example-1.txt"))
