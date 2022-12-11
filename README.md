@@ -11,9 +11,8 @@ Solutions :
 - [day04](src/test/scala/day04/Puzzle.scala) - ok
 - [day05](src/test/scala/day05/Puzzle.scala) - ok - but readability could be enhanced
 - [day06](src/test/scala/day06/Puzzle.scala) - ok
-- [day07](src/test/scala/day07/Puzzle.scala) - ok - require refactoring + extract generic tree algorithm for paths / trees 
+- [day07](src/test/scala/day07/Puzzle.scala) - ok - Refactored to generalize my own paths/tree conversion functions for reuse purposes  
 - [day08](src/test/scala/day08/Puzzle.scala) - ok
 - [day09](src/test/scala/day09/Puzzle.scala) - ok
 - [day10](src/test/scala/day10/Puzzle.scala) - ok - using ZStream
 - [day11](src/test/scala/day11/Puzzle.scala) - ok
-
