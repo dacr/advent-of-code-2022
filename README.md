@@ -15,4 +15,5 @@ Solutions :
 - [day08](src/test/scala/day08/Puzzle.scala) - ok
 - [day09](src/test/scala/day09/Puzzle.scala) - ok
 - [day10](src/test/scala/day10/Puzzle.scala) - ok - using ZStream
+- [day11](src/test/scala/day11/Puzzle.scala) - ok
 
