@@ -51,7 +51,9 @@ def walk(area: Area, visitQueue: List[(List[Coord], Int)], bestDepths: Map[Coord
   visitQueue match {
     case Nil => 0
 
-    case (current :: path, depth) :: _ if current == area.goal => path.size
+    case (current :: path, depth) :: _ if current == area.goal =>
+      //area.printRoute(current :: path)
+      path.size
 
     case (from :: path, fromDepth) :: others if bestDepths.contains(from) && fromDepth >= bestDepths(from) =>
       walk(area, others, bestDepths)
@@ -69,7 +71,6 @@ def walk(area: Area, visitQueue: List[(List[Coord], Int)], bestDepths: Map[Coord
       }
       val updatedBestDepths = bestDepths + (from -> fromDepth)
       val updatedVisitQueue = others ++ nextToVisit.map(to => (to :: from :: path, fromDepth + 1))
-      //area.printRoute(from :: path)
       walk(area, updatedVisitQueue, updatedBestDepths)
   }
 }
@@ -82,12 +83,10 @@ def resolveStar1(input: List[String]): Int =
 
 def resolveStar2(input: List[String]): Int =
   val area = parse(input)
-  area
-    .grid
-    .cells
-    .collect{case (pos, cell) if cell.height == 'a' => pos}
-    .map(startPos => walk(area, (startPos::Nil,0) ::Nil, Map.empty))
-    .filter(_>0)
+  area.grid.cells
+    .collect { case (pos, cell) if cell.height == 'a' => pos }
+    .map(startPos => walk(area, (startPos :: Nil, 0) :: Nil, Map.empty))
+    .filter(_ > 0)
     .min
 
 // ------------------------------------------------------------------------------
