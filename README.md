@@ -16,3 +16,4 @@ Solutions :
 - [day09](src/test/scala/day09/Puzzle.scala) - ok
 - [day10](src/test/scala/day10/Puzzle.scala) - ok - using ZStream
 - [day11](src/test/scala/day11/Puzzle.scala) - ok
+- [day12](src/test/scala/day12/Puzzle.scala) - ok - TODO generalize and extract written algorithm
