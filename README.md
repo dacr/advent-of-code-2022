@@ -16,5 +16,5 @@ Solutions :
 - [day09](src/test/scala/day09/Puzzle.scala) - ok
 - [day10](src/test/scala/day10/Puzzle.scala) - ok - using ZStream
 - [day11](src/test/scala/day11/Puzzle.scala) - ok
-- [day12](src/test/scala/day12/Puzzle.scala) - ok - Refactored to generalize shortestPath algorithm
+- [day12](src/test/scala/day12/Puzzle.scala) - ok - Refactored to generalize shortestPath algorithm - TODO try Dijkstra
 - [day13](src/test/scala/day13/Puzzle.scala) - ok - using parser combinator :) good reminder
