@@ -12,12 +12,13 @@ lazy val versions = new {
 }
 
 libraryDependencies ++= Seq(
-  "dev.zio" %% "zio"          % versions.zio,
-  "dev.zio" %% "zio-nio"      % versions.nio,
-  "dev.zio" %% "zio-test"     % versions.zio,
-  "dev.zio" %% "zio-streams"  % versions.zio,
-  "dev.zio" %% "zio-test"     % versions.zio % Test,
-  "dev.zio" %% "zio-test-sbt" % versions.zio % Test
+  "dev.zio"                %% "zio"                      % versions.zio,
+  "dev.zio"                %% "zio-nio"                  % versions.nio,
+  "dev.zio"                %% "zio-test"                 % versions.zio,
+  "dev.zio"                %% "zio-streams"              % versions.zio,
+  "dev.zio"                %% "zio-test"                 % versions.zio % Test,
+  "dev.zio"                %% "zio-test-sbt"             % versions.zio % Test,
+  "org.scala-lang.modules" %% "scala-parser-combinators" % "2.1.1"
   // "dev.zio" %% "zio-test-junit" % versions.zio % Test
 )
 

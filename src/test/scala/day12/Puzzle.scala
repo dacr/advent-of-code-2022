@@ -74,7 +74,7 @@ def shortestPath(area: Area, visitQueue: List[(List[Coord], Set[Coord], Int)], b
       val updatedVisited    = visited + from
       val updatedPath       = from :: path
       val updatedVisitQueue = others ++ nextToVisit.map(to => (to :: updatedPath, updatedVisited, fromDepth + 1))
-      // area.printRoute(from :: path, updatedBestDepths)
+      //area.printRoute(from :: path, updatedBestDepths)
       shortestPath(area, updatedVisitQueue, updatedBestDepths)
   }
 }
