@@ -1,109 +1,133 @@
 package tmp
 
-import java.time.temporal.ChronoUnit
-import math.*
+import scala.math.*
+import scala.io.AnsiColor.{WHITE, BLUE, RESET, RED, BOLD}
+import scala.util.chaining._
 
-enum Direction(val code: String, val dx: Int, val dy: Int) {
-  case Right extends Direction("R", 1, 0)
-  case Left  extends Direction("L", -1, 0)
-  case Up    extends Direction("U", 0, -1)
-  case Down  extends Direction("D", 0, 1)
+case class Coord(x: Int, y: Int)
+case class Cell(height: Char)            extends AnyVal
+case class Grid(cells: Map[Coord, Cell]) extends AnyVal
+case class Area(grid: Grid, origin: Coord, goal: Coord, width: Int, height: Int) {
+  def printRoute(route: List[Coord], bestDepth: Map[Coord, Int] = Map.empty): Unit = {
+    val routeSet = route.toSet
+    val lines    =
+      0.until(height)
+        .map(y =>
+          0.until(width)
+            .map { x =>
+              val coord = Coord(x, y)
+              val ch    = grid.cells(coord).height
+              if (routeSet.contains(coord))
+                s"$RED$BOLD$ch$RESET"
+              else if (bestDepth.contains(coord))
+                s"$BLUE$ch$RESET"
+              else s"$ch"
+            }
+            .mkString
+        )
+    println()
+    println(lines.mkString("\n"))
+  }
 }
-case class Move(direction: Direction, howMany: Int)
-
-case class Pos(x: Int, y: Int) {
-  def move(direction: Direction): Pos =
-    Pos(x + direction.dx, y + direction.dy)
-}
-
-case class Rope(positions: List[Pos])
 
 // ------------------------------------------------------------------------------
-def parse(input: List[String]) =
-  input.map { line =>
-    line.split(" ", 2) match {
-      case Array(code, n) => Move(Direction.values.find(_.code == code).get, n.toInt)
+def parse(input: List[String]): Area = {
+  val width       = input.headOption.map(_.size).getOrElse(0)
+  val height      = input.size
+  val grid        = input.zipWithIndex.flatMap((line, y) => line.zipWithIndex.map((ch, x) => Coord(x, y) -> Cell(ch)))
+  val origin      = grid.view.collect { case (coord, cell) if cell.height == 'S' => coord }.head
+  val goal        = grid.view.collect { case (coord, cell) if cell.height == 'E' => coord }.head
+  val updatedGrid = Grid(grid.toMap + (origin -> Cell('a')) + (goal -> Cell('z')))
+  Area(updatedGrid, origin, goal, width, height)
+}
+
+// ------------------------------------------------------------------------------
+
+def shortestPath[COORD](from: COORD)(goalCheck: COORD => Boolean, nextMoves: COORD => List[COORD]): List[COORD] = {
+  @annotation.tailrec
+  def worker(visitQueue: List[(List[COORD], Set[COORD], Int)], bestDepths: Map[COORD, Int]): List[COORD] = {
+    visitQueue match {
+      case Nil => Nil
+
+      case (current :: path, visited, depth) :: _ if goalCheck(current) =>
+        // area.printRoute(current :: path, bestDepths)
+        path
+
+      case (from :: path, visited, fromDepth) :: others if bestDepths.contains(from) && fromDepth >= bestDepths(from) =>
+        worker(others, bestDepths)
+
+      case (from :: path, visited, fromDepth) :: others =>
+        val nextToVisit       = nextMoves(from).filterNot(visited.contains)
+        val updatedBestDepths = bestDepths + (from -> fromDepth)
+        val updatedVisited    = visited + from
+        val updatedPath       = from :: path
+        val updatedVisitQueue = others ++ nextToVisit.map(to => (to :: updatedPath, updatedVisited, fromDepth + 1))
+        // area.printRoute(from :: path, updatedBestDepths)
+        worker(updatedVisitQueue, updatedBestDepths)
     }
   }
-
-// ------------------------------------------------------------------------------
-
-def adjust(positions: List[Pos]): List[Pos] = positions match {
-  case first :: second :: tail if abs(first.x - second.x) > 1 || abs(first.y - second.y) > 1 =>
-    val dx = signum(first.x - second.x)
-    val dy = signum(first.y - second.y)
-    first :: adjust(Pos(second.x + dx, second.y + dy) :: tail)
-
-  case _ => positions
+  worker((from :: Nil, Set.empty, 0) :: Nil, Map.empty)
 }
 
-@annotation.tailrec
-def applyMove(rope: Rope, instruction: Move, history: List[Pos]): (Rope, List[Pos]) = {
-  import instruction.*
-  if (howMany == 0) (rope, history)
-  else {
-    val newHead = rope.positions.head.move(direction)
-    val newRope = Rope(adjust(newHead :: rope.positions.tail))
-    val lastPos = newRope.positions.last
-    applyMove(newRope, Move(direction, howMany - 1), lastPos::history)
+// ------------------------------------------------------------------------------
+def around(area: Area, from: Coord): List[Coord] =
+  List(
+    from.copy(x = from.x + 1),
+    from.copy(x = from.x - 1),
+    from.copy(y = from.y + 1),
+    from.copy(y = from.y - 1)
+  )
+
+def nextMoves1(area: Area)(from: Coord): List[Coord] =
+  around(area, from).filter { to =>
+    area.grid.cells.contains(to) &&
+      (area.grid.cells(to).height - area.grid.cells(from).height <= 1)
   }
-}
+
+def resolveStar1(input: List[String]): Int =
+  val area = parse(input)
+  val path = shortestPath(area.origin)(_ == area.goal, nextMoves1(area))
+  // area.printRoute(path)
+  path.size
 
 // ------------------------------------------------------------------------------
 
-@annotation.tailrec
-def motionInAction(rope: Rope, moves: List[Move], visited: List[Pos]): List[Pos] = {
-  if (moves.isEmpty) visited
-  else {
-    val (updatedRope, updatedVisited) = applyMove(rope, moves.head, visited)
-    motionInAction(updatedRope, moves.tail, updatedVisited)
+def nextMoves2(area: Area)(from: Coord): List[Coord] =
+  around(area, from).filter { to =>
+    area.grid.cells.contains(to) &&
+      (area.grid.cells(to).height - area.grid.cells(from).height >= -1)
   }
-}
 
-def resolveStar1(input: List[String]): Int = {
-  val moves     = parse(input)
-  val startPos  = Pos(0, 0)
-  val positions = List.fill(2)(Pos(0, 0))
-  val visited   = motionInAction(Rope(positions), moves, List(startPos))
-  visited.distinct.size
-}
+def resolveStar2(input: List[String]): Int =
+  val area = parse(input)
+  val path = shortestPath(area.goal)(pos => area.grid.cells(pos).height == 'a', nextMoves2(area))
+  path.size
 
-// ------------------------------------------------------------------------------
-
-def resolveStar2(input: List[String]): Int = {
-  val moves     = parse(input)
-  val startPos  = Pos(0, 0)
-  val positions = List.fill(10)(startPos)
-  val visited   = motionInAction(Rope(positions), moves, List(startPos))
-  visited.distinct.size
-}
 
 object PerfTry {
+  val day = "day12"
 
-  val day = "day09"
+  import java.nio.file.Files.readAllLines
+  import java.nio.file.Path
+  import java.io.File
+  import scala.jdk.CollectionConverters.*
+
+  def check1(): Unit = {
+    val input  = readAllLines(Path.of(s"data/$day/puzzle-1.txt")).asScala.toList
+    val result = resolveStar2(input)
+    assert(result == 454)
+  }
 
   def main(args: Array[String]) = {
-    import java.nio.file.Files.readAllLines
-    import java.nio.file.Path
-    import java.io.File
-    import scala.jdk.CollectionConverters.*
 
+    val trainStarted = System.currentTimeMillis()
+    while(System.currentTimeMillis() - trainStarted < 5000) check1()
 
-    1.to(4000).foreach { i =>
-      val puzzleInput = readAllLines(File(s"data/$day/puzzle-1.txt").toPath).asScala.toList
-      val puzzleResult = resolveStar2(puzzleInput)
-      assert(puzzleResult == 2327)
-    }
-
-    val started       = System.nanoTime()
-    val puzzleInput = readAllLines(File(s"data/$day/puzzle-1.txt").toPath).asScala.toList
-    val puzzleResult = resolveStar2(puzzleInput)
-    val ended         = System.nanoTime()
-    val duration      = (ended - started).toDouble / 1000L
-    System.out.println(s"In ${duration}µs - $puzzleResult")
-    assert(puzzleResult == 2327)
-
-
+    val started  = System.nanoTime()
+    check1()
+    val ended    = System.nanoTime()
+    val duration = (ended - started).toDouble / 1000L
+    System.out.println(s"In ${duration}µs")
   }
 
 }

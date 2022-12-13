@@ -45,57 +45,66 @@ def parse(input: List[String]): Area = {
 }
 
 // ------------------------------------------------------------------------------
-def heightCheck(from: Int, to: Int): Boolean = (to - from <= 1) //|| (to - from == 0)
 
-@annotation.tailrec
-def shortestPath(area: Area, visitQueue: List[(List[Coord], Set[Coord], Int)], bestDepths: Map[Coord, Int]): List[Coord] = {
-  visitQueue match {
-    case Nil => Nil
+def shortestPath[COORD](from: COORD)(goalCheck: COORD => Boolean, nextMoves: COORD => List[COORD]): List[COORD] = {
+  @annotation.tailrec
+  def worker(visitQueue: List[(List[COORD], Set[COORD], Int)], bestDepths: Map[COORD, Int]): List[COORD] = {
+    visitQueue match {
+      case Nil => Nil
 
-    case (current :: path, visited, depth) :: _ if current == area.goal =>
-      // area.printRoute(current :: path, bestDepths)
-      path
+      case (current :: path, visited, depth) :: _ if goalCheck(current) =>
+        // area.printRoute(current :: path, bestDepths)
+        path
 
-    case (from :: path, visited, fromDepth) :: others if bestDepths.contains(from) && fromDepth >= bestDepths(from) =>
-      shortestPath(area, others, bestDepths)
+      case (from :: path, visited, fromDepth) :: others if bestDepths.contains(from) && fromDepth >= bestDepths(from) =>
+        worker(others, bestDepths)
 
-    case (from :: path, visited, fromDepth) :: others =>
-      val nextToVisit       = List(
-        from.copy(x = from.x + 1),
-        from.copy(x = from.x - 1),
-        from.copy(y = from.y + 1),
-        from.copy(y = from.y - 1)
-      ).filter { to =>
-        !visited.contains(to) &&
-        area.grid.cells.contains(to) &&
-        heightCheck(area.grid.cells(from).height, area.grid.cells(to).height)
-      }
-      val updatedBestDepths = bestDepths + (from -> fromDepth)
-      val updatedVisited    = visited + from
-      val updatedPath       = from :: path
-      val updatedVisitQueue = others ++ nextToVisit.map(to => (to :: updatedPath, updatedVisited, fromDepth + 1))
-      //area.printRoute(from :: path, updatedBestDepths)
-      shortestPath(area, updatedVisitQueue, updatedBestDepths)
+      case (from :: path, visited, fromDepth) :: others =>
+        val nextToVisit       = nextMoves(from).filterNot(visited.contains)
+        val updatedBestDepths = bestDepths + (from -> fromDepth)
+        val updatedVisited    = visited + from
+        val updatedPath       = from :: path
+        val updatedVisitQueue = others ++ nextToVisit.map(to => (to :: updatedPath, updatedVisited, fromDepth + 1))
+        // area.printRoute(from :: path, updatedBestDepths)
+        worker(updatedVisitQueue, updatedBestDepths)
+    }
   }
+  worker((from :: Nil, Set.empty, 0) :: Nil, Map.empty)
 }
+
+// ------------------------------------------------------------------------------
+def around(area: Area, from: Coord): List[Coord] =
+  List(
+    from.copy(x = from.x + 1),
+    from.copy(x = from.x - 1),
+    from.copy(y = from.y + 1),
+    from.copy(y = from.y - 1)
+  )
+
+def nextMoves1(area: Area)(from: Coord): List[Coord] =
+  around(area, from).filter { to =>
+    area.grid.cells.contains(to) &&
+    (area.grid.cells(to).height - area.grid.cells(from).height <= 1)
+  }
 
 def resolveStar1(input: List[String]): Int =
   val area = parse(input)
-  val path = shortestPath(area, (area.origin :: Nil, Set.empty, 0) :: Nil, Map.empty)
+  val path = shortestPath(area.origin)(_ == area.goal, nextMoves1(area))
   // area.printRoute(path)
   path.size
 
 // ------------------------------------------------------------------------------
 
+def nextMoves2(area: Area)(from: Coord): List[Coord] =
+  around(area, from).filter { to =>
+    area.grid.cells.contains(to) &&
+    (area.grid.cells(to).height - area.grid.cells(from).height >= -1)
+  }
+
 def resolveStar2(input: List[String]): Int =
   val area = parse(input)
-  area.grid.cells
-    .collect { case (pos, cell) if cell.height == 'a' => pos }
-    .map(startPos => shortestPath(area, (startPos :: Nil, Set.empty, 0) :: Nil, Map.empty))
-    .filter(_.size > 0)
-    .minBy(_.size)
-    // .tap(foundPath => area.printRoute(foundPath))
-    .size
+  val path = shortestPath(area.goal)(pos => area.grid.cells(pos).height == 'a', nextMoves2(area))
+  path.size
 
 // ------------------------------------------------------------------------------
 
