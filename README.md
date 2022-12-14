@@ -18,3 +18,4 @@ Solutions :
 - [day11](src/test/scala/day11/Puzzle.scala) - ok
 - [day12](src/test/scala/day12/Puzzle.scala) - ok - Refactored to generalize shortestPath algorithm - TODO try Dijkstra
 - [day13](src/test/scala/day13/Puzzle.scala) - ok - using parser combinator :) good reminder
+- [day14](src/test/scala/day14/Puzzle.scala) - ok
