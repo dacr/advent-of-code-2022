@@ -8,6 +8,7 @@ import scala.math.*
 // ------------------------------------------------------------------------------
 case class Range(a: Long, b: Long) {
   def contains(x: Long) = a <= x && x <= b
+  def contains(that: Range) = a<= that.a && that.b <= b
 }
 
 case class Coord(x: Long, y: Long)
@@ -34,31 +35,58 @@ def parse(input: List[String]) =
   input.collect { case lineRE(sx, sy, bx, by) => Zone(Coord(sx.toLong, sy.toLong), Coord(bx.toLong, by.toLong)) }.toVector
 
 // ------------------------------------------------------------------------------
-def noBeaconPlaceCount(zones: Vector[Zone], y: Long): Int = {
-  val beacons = zones.map(_.closestBeacon).toSet
-  val sensors = zones.map(_.sensor).toSet
-  val ranges  = zones.flatMap(_.rangeAtRow(y))
-  val minX    = ranges.map(_.a).min
-  val maxX    = ranges.map(_.b).max
+def noBeaconPlace(zones: Vector[Zone], beacons: Set[Coord], sensors: Set[Coord], y: Long): Seq[Coord] = {
+  val ranges = zones.flatMap(_.rangeAtRow(y))
+  if (ranges.isEmpty) Seq.empty
+  else {
+    val minX = ranges.map(_.a).min
+    val maxX = ranges.map(_.b).max
 
-  val result = minX.to(maxX).filter { x =>
-    val coord = Coord(x, y)
-    !beacons.contains(coord) &&
-    !sensors.contains(coord) &&
-    ranges.exists(_.contains(x))
+    minX.to(maxX).map(x => Coord(x, y)).filter { coord =>
+      !beacons.contains(coord) &&
+      !sensors.contains(coord) &&
+      ranges.exists(_.contains(coord.x))
+    }
   }
-  result.size
 }
 
 def resolveStar1(input: List[String], row: Int): Int =
-  val zones = parse(input)
-  // println(zones.mkString("\n"))
-  noBeaconPlaceCount(zones, row)
+  val zones   = parse(input)
+  val beacons = zones.map(_.closestBeacon).toSet
+  val sensors = zones.map(_.sensor).toSet
+  // println(zones.sortBy(_.radius).mkString("\n"))
+  noBeaconPlace(zones, beacons, sensors, row).size
 
 // ------------------------------------------------------------------------------
 
-def resolveStar2(input: List[String]): Int =
-  0
+def reduceRange(interval: Range, that: Range): List[Range] =
+  ???
+
+def reduceRange(intervals: List[Range], that: Range): List[Range] =
+  intervals.flatMap(interval => reduceRange(interval, that))
+
+def searchPlaces(zones: Vector[Zone], y: Long, maxX: Long): Seq[Long] = {
+  val ranges = zones.flatMap(_.rangeAtRow(y))
+  if (ranges.isEmpty) Seq.empty
+  else {
+    val toReduceRange = Range(0L, maxX)
+    ranges.foldLeft(List(toReduceRange))((reducedIntervals, range) => reduceRange(reducedIntervals, range))
+    result
+  }
+}
+
+def resolveStar2Naive(input: List[String]): Long = {
+  val zones  = parse(input)
+  val maxX   = sensors.maxBy(_.x).x
+  val maxY   = sensors.maxBy(_.y).y
+  println(s"maxX=$maxX maxY=$maxY")
+  val result = 0.to(maxY.toInt).flatMap { y => searchPlaces(zones, beacons, sensors, y, maxX) }
+  result.headOption.getOrElse(0L)
+}
+
+def resolveStar2(input: List[String]): Long = {
+  resolveStar2Naive(input)
+}
 
 // ------------------------------------------------------------------------------
 
@@ -94,8 +122,8 @@ object Puzzle15Test extends ZIOSpecDefault {
         puzzleInput   <- fileLines(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult   = resolveStar2(puzzleInput)
       } yield assertTrue(
-        exampleResult1 == 0,
-        puzzleResult == 0
+        exampleResult1 == 56000011L,
+        puzzleResult == 0L
       )
     }
   ) @@ timed @@ sequential
