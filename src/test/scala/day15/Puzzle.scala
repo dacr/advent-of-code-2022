@@ -6,9 +6,49 @@ import zio.test.TestAspect.*
 import scala.math.*
 
 // ------------------------------------------------------------------------------
-case class Range(a: Long, b: Long) {
-  def contains(x: Long) = a <= x && x <= b
-  def contains(that: Range) = a<= that.a && that.b <= b
+case class Range(from: Long, to: Long) {
+  def contains(x: Long): Boolean = from <= x && x <= to
+
+  def contains(that: Range): Boolean = from <= that.from && that.to <= to
+
+  def overlap(that: Range): Boolean =
+    (from <= that.to && that.to <= to) ||
+      (from <= that.from && that.from <= to) ||
+      (that.from <= to && to <= that.to) ||
+      (that.from <= from && from <= that.to)
+
+  def reduce(that: Range): Option[Range] = {
+    if (contains(that)) Some(this)
+    else if (that.contains(this)) Some(that)
+    else if (overlap(that)) Some(Range(min(that.from, from), max(that.to, to)))
+    else None
+  }
+}
+
+def compactRanges(ranges: List[Range]): List[Range] = {
+  def reduceWorker(remaining: List[Range]): List[Range] = {
+    remaining match {
+      case Nil =>
+        Nil
+
+      case a :: b :: rem if a.contains(b) =>
+        reduceWorker(a :: rem)
+
+      case a :: b :: rem if a.overlap(b) =>
+        reduceWorker(Range(min(a.from, b.from), max(a.to, b.to)) :: rem)
+
+      case a :: b :: rem if a.to + 1 == b.from =>
+        reduceWorker(Range(min(a.from, b.from), max(a.to, b.to)) :: rem)
+
+      case a :: rem =>
+        a :: reduceWorker(rem)
+    }
+  }
+  reduceWorker(ranges.sortBy(_.from))
+}
+
+def rangesOverlap(ranges: List[Range], that: Range): List[Range] = {
+  ranges.filter(range => that.overlap(range))
 }
 
 case class Coord(x: Long, y: Long)
@@ -39,8 +79,8 @@ def noBeaconPlace(zones: Vector[Zone], beacons: Set[Coord], sensors: Set[Coord],
   val ranges = zones.flatMap(_.rangeAtRow(y))
   if (ranges.isEmpty) Seq.empty
   else {
-    val minX = ranges.map(_.a).min
-    val maxX = ranges.map(_.b).max
+    val minX = ranges.map(_.from).min
+    val maxX = ranges.map(_.to).max
 
     minX.to(maxX).map(x => Coord(x, y)).filter { coord =>
       !beacons.contains(coord) &&
@@ -59,33 +99,30 @@ def resolveStar1(input: List[String], row: Int): Int =
 
 // ------------------------------------------------------------------------------
 
-def reduceRange(interval: Range, that: Range): List[Range] =
-  ???
-
-def reduceRange(intervals: List[Range], that: Range): List[Range] =
-  intervals.flatMap(interval => reduceRange(interval, that))
-
-def searchPlaces(zones: Vector[Zone], y: Long, maxX: Long): Seq[Long] = {
+def searchPlaces(zones: List[Zone], y: Long, maxX: Long): Seq[Long] = {
   val ranges = zones.flatMap(_.rangeAtRow(y))
-  if (ranges.isEmpty) Seq.empty
-  else {
-    val toReduceRange = Range(0L, maxX)
-    ranges.foldLeft(List(toReduceRange))((reducedIntervals, range) => reduceRange(reducedIntervals, range))
-    result
+  if (ranges.isEmpty) {
+    Seq.empty
+  } else {
+    val toReduceRange   = Range(0L, maxX)
+    val compactedRanges = compactRanges(ranges)
+    if (compactedRanges.size > 1) { // TODO REFACTORING
+      //println(s"$y:" + compactedRanges.mkString("->"))
+      Seq((compactedRanges.head.to + 1) * 4000000 + y) // TODO REFACTORING!
+    } else Seq.empty
   }
 }
 
-def resolveStar2Naive(input: List[String]): Long = {
-  val zones  = parse(input)
-  val maxX   = sensors.maxBy(_.x).x
-  val maxY   = sensors.maxBy(_.y).y
-  println(s"maxX=$maxX maxY=$maxY")
-  val result = 0.to(maxY.toInt).flatMap { y => searchPlaces(zones, beacons, sensors, y, maxX) }
-  result.headOption.getOrElse(0L)
-}
-
 def resolveStar2(input: List[String]): Long = {
-  resolveStar2Naive(input)
+  val zones   = parse(input).toList
+  val sensors = zones.map(_.sensor)
+  val maxX    = sensors.maxBy(_.x).x
+  val maxY    = sensors.maxBy(_.y).y
+  //println(s"maxX=$maxX maxY=$maxY")
+  val result  =
+    0.to(maxY.toInt).flatMap(y => searchPlaces(zones, y, maxX))
+  //println(result)
+  result.head // TODO REFACTORING
 }
 
 // ------------------------------------------------------------------------------
@@ -123,7 +160,7 @@ object Puzzle15Test extends ZIOSpecDefault {
         puzzleResult   = resolveStar2(puzzleInput)
       } yield assertTrue(
         exampleResult1 == 56000011L,
-        puzzleResult == 0L
+        puzzleResult == 10852583132904L
       )
     }
   ) @@ timed @@ sequential
