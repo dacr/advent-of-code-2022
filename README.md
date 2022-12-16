@@ -20,3 +20,4 @@ Solutions :
 - [day13](src/test/scala/day13/Puzzle.scala) - ok - using parser combinator :) good reminder
 - [day14](src/test/scala/day14/Puzzle.scala) - ok
 - [day15](src/test/scala/day15/Puzzle.scala) - ok - ranges - requires some cleanup/refactoring - ranges functions can be generalized
+- [day16](src/test/scala/day16/Puzzle.scala) -    - graphs - work in progress
