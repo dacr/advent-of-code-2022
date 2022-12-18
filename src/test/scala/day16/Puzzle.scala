@@ -6,31 +6,33 @@ import zio.test.TestAspect.*
 import scala.math.*
 
 // ------------------------------------------------------------------------------
-// Written originally from DAY12
-def shortestPath[COORD](from: COORD)(goalCheck: COORD => Boolean, nextMoves: COORD => List[COORD]): List[COORD] = {
+// Written originally from DAY12 - enhanced release
+def simpleShortestPath[NODE](from: NODE)(goalCheck: NODE => Boolean, nextMoves: NODE => List[NODE]): List[NODE] = {
+  case class Work(builtReversePath: List[NODE], visited: Set[NODE], currentDepth: Int)
   @annotation.tailrec
-  def worker(visitQueue: List[(List[COORD], Set[COORD], Int)], bestDepths: Map[COORD, Int]): List[COORD] = {
-    visitQueue match {
+  def worker(workQueue: List[Work], bestDepths: Map[NODE, Int]): List[NODE] = {
+    workQueue match {
       case Nil => Nil
 
-      case (current :: path, visited, depth) :: _ if goalCheck(current) =>
-        // area.printRoute(current :: path, bestDepths)
+      case Work(current :: path, _, _) :: _ if goalCheck(current) =>
         current :: path
 
-      case (from :: path, visited, fromDepth) :: others if bestDepths.contains(from) && fromDepth >= bestDepths(from) =>
+      case Work(from :: _, _, fromDepth) :: others if bestDepths.contains(from) && fromDepth >= bestDepths(from) =>
         worker(others, bestDepths)
 
-      case (from :: path, visited, fromDepth) :: others =>
+      case Work(from :: path, visited, fromDepth) :: others =>
         val nextToVisit       = nextMoves(from).filterNot(visited.contains)
         val updatedBestDepths = bestDepths + (from -> fromDepth)
         val updatedVisited    = visited + from
         val updatedPath       = from :: path
-        val updatedVisitQueue = others ++ nextToVisit.map(to => (to :: updatedPath, updatedVisited, fromDepth + 1))
-        // area.printRoute(from :: path, updatedBestDepths)
+        val updatedVisitQueue = others ++ nextToVisit.map(to => Work(to :: updatedPath, updatedVisited, fromDepth + 1))
         worker(updatedVisitQueue, updatedBestDepths)
     }
   }
-  worker((from :: Nil, Set.empty, 0) :: Nil, Map.empty)
+
+  val startWork = Work(from :: Nil, Set.empty, 0)
+
+  worker(startWork :: Nil, Map.empty)
 }
 
 // ------------------------------------------------------------------------------
@@ -53,75 +55,32 @@ def parse(input: List[String]): Map[ValveName, Valve] =
 
 // ------------------------------------------------------------------------------
 case class Segment(from: ValveName, to: ValveName)
-case class ShortestPath(from: Valve, to: Valve, path: List[ValveName], size: Int)
+case class ShortestPath(from: Valve, to: Valve, size: Int)
 
-def search(origin: ValveName, valveByName: Map[ValveName, Valve], limit: Int = 30): Int = {
+def search(originName: ValveName, valveByName: Map[ValveName, Valve], limit: Int = 30): Int = {
   val openableValves     = valveByName.values.filter(_.rate.value > 0).toSet
   val openableValvesName = openableValves.map(_.name)
 
-  val shortestSegments =
-    (openableValves + valveByName(origin)) // Add origin of course although it is not openable (rate == 0)
+  val graph =
+    (openableValves + valveByName(originName)) // Add origin of course although it is not openable (rate == 0)
       .toList
       .combinations(2)
       .flatMap { case Seq(from, to) =>
-        val path = shortestPath(from.name)(_ == to.name, name => valveByName(name).children)
+        val path = simpleShortestPath(from.name)(_ == to.name, name => valveByName(name).children)
         List(
-          Segment(from.name, to.name) -> ShortestPath(from, to, path.reverse, path.size),
-          Segment(to.name, from.name) -> ShortestPath(to, from, path, path.size)
+          Segment(from.name, to.name) -> ShortestPath(from, to, path.size),
+          Segment(to.name, from.name) -> ShortestPath(to, from, path.size)
         )
       }
-      .filterNot { case (s, _) => s.to == origin }
+      .filterNot { case (s, _) => s.to == originName }
       .toMap
 
-  println(shortestSegments.map((s, p) => s -> p.path).toList.sortBy((s, p) => s.from.name).mkString("\n"))
+  println(graph.map((s, p) => s -> p.size).toList.sortBy((s, p) => s.from.name).mkString("\n"))
 
-  def worker(fromName: ValveName, depth: Int, opened: Set[ValveName], closedOpenable: Set[ValveName], openedSum: Int, accumulator: Int): Int = {
-    if (depth == 3)  println(s"$depth : $accumulator $openedSum ${opened.map(_.name).mkString(",")}")
-    if (depth == limit || closedOpenable.isEmpty) {
-      val updatedAccumulator = accumulator + openedSum * (limit - min(limit, depth))
-      updatedAccumulator
-    } else {
-      val fromValve = valveByName(fromName)
-
-      lazy val childResults =
-        shortestSegments.collect {
-          case (segment, shortest) if segment.from == fromName && closedOpenable.contains(segment.to) =>
-            val updatedDepth       = min(limit, depth + shortest.size - 1)
-            val updatedAccumulator = accumulator + openedSum * (updatedDepth - depth)
-            //println(s"$segment - $depth->$updatedDepth - $updatedAccumulator")
-            worker(
-              fromName = segment.to,
-              depth = updatedDepth,
-              opened = opened,
-              closedOpenable = closedOpenable,
-              openedSum = openedSum,
-              accumulator = updatedAccumulator
-            )
-        }.toList
-
-      val result = if (closedOpenable.contains(fromName)) {
-        worker(
-          fromName = fromName,
-          depth = depth + 1,
-          opened = opened + fromName,
-          closedOpenable = closedOpenable - fromName,
-          openedSum = openedSum + fromValve.rate.value,
-          accumulator = accumulator + openedSum
-        ) :: childResults
-      } else {
-        childResults :+ worker(
-          fromName = fromName,
-          depth = depth + 1,
-          opened = opened,
-          closedOpenable = closedOpenable,
-          openedSum = openedSum,
-          accumulator = accumulator + openedSum
-        )
-      }
-      result.max
-    }
+  def worker(fromName: ValveName): Int = {
+    0
   }
-  worker(fromName = origin, depth = 1, opened = Set(), closedOpenable = openableValvesName, openedSum = 0, accumulator = 0)
+  worker(originName)
 }
 
 // ------------------------------------------------------------------------------
