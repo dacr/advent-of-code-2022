@@ -7,17 +7,25 @@ import scala.util.chaining.*
 
 // ------------------------------------------------------------------------------
 case class Coord(x: Int, y: Int, z: Int) {
-  def left     = Coord(x - 1, y, z)
-  def right    = Coord(x + 1, y, z)
-  def up       = Coord(x, y + 1, z)
-  def down     = Coord(x, y - 1, z)
-  def backward = Coord(x, y, z + 1)
-  def forward  = Coord(x, y, z - 1)
+  def left               = Coord(x - 1, y, z)
+  def right              = Coord(x + 1, y, z)
+  def up                 = Coord(x, y + 1, z)
+  def down               = Coord(x, y - 1, z)
+  def backward           = Coord(x, y, z + 1)
+  def forward            = Coord(x, y, z - 1)
+  def around: Set[Coord] = Set(left, right, up, down, backward, forward)
 }
 
 case class Face(coords: Set[Coord]) extends AnyVal
 
-case class Droplet(faces: Set[Face]) extends AnyVal
+case class Droplet(faces: Set[Face]) extends AnyVal {
+  def left     = Droplet(faces.map(face => Face(face.coords.map(_.left))))
+  def right    = Droplet(faces.map(face => Face(face.coords.map(_.right))))
+  def up       = Droplet(faces.map(face => Face(face.coords.map(_.up))))
+  def down     = Droplet(faces.map(face => Face(face.coords.map(_.down))))
+  def backward = Droplet(faces.map(face => Face(face.coords.map(_.backward))))
+  def forward  = Droplet(faces.map(face => Face(face.coords.map(_.forward))))
+}
 
 object Droplet {
   def apply(coord: Coord): Droplet = Droplet(
@@ -52,23 +60,49 @@ def resolveStar1(input: List[String]): Int =
 
 // ------------------------------------------------------------------------------
 
-def findInternalHoles(droplets: Set[Droplet]): Set[Droplet] = {
-  val allFaces     = droplets.flatMap(_.faces)
-  val allCoords    = allFaces.flatMap(_.coords)
-  val fillWithHole =
-    allCoords
-      .map(coord => coord -> Droplet(coord))
-      .filterNot((coord, droplet) => droplets.contains(droplet))
-      .filter((coord, droplet) => droplet.faces.forall(allFaces.contains))
-      .tapEach((coord, droplet) => println(s"FOUND HOLE AT : $coord"))
-      .map((coord, droplet) => droplet)
-  fillWithHole
+def walk(droplets: Set[Droplet]): Int = {
+  val allFaces  = droplets.flatMap(_.faces)
+  val allCoords = allFaces.flatMap(_.coords)
+  val minX      = allCoords.map(_.x).min - 1
+  val maxX      = allCoords.map(_.x).max + 1
+  val minY      = allCoords.map(_.y).min - 1
+  val maxY      = allCoords.map(_.y).max + 1
+  val minZ      = allCoords.map(_.z).min - 1
+  val maxZ      = allCoords.map(_.z).max + 1
+  val startFrom = Coord(minX, minY, minZ)
+
+  @annotation.tailrec
+  def worker(tovisit: List[Coord], visited: Set[Coord], unconnectedFaceCount: Int): Int = {
+    tovisit match {
+      case Nil => unconnectedFaceCount
+
+      case head :: remain if visited.contains(head) => worker(remain, visited, unconnectedFaceCount)
+
+      case head :: remain if droplets.contains(Droplet(head)) => worker(remain, visited + head, unconnectedFaceCount)
+
+      case head :: remain =>
+        val validNextCoords =
+          head.around
+            .filter(coord =>
+              coord.x >= minX &&
+                coord.x <= maxX &&
+                coord.y >= minY &&
+                coord.y <= maxY &&
+                coord.z >= minZ &&
+                coord.z <= maxZ
+            )
+
+        val (occupiedCoords, freeCoords) = validNextCoords.partition(coord => droplets.contains(Droplet(coord)))
+        worker(remain ++ freeCoords.toList, visited + head, unconnectedFaceCount + occupiedCoords.size)
+    }
+  }
+
+  worker(startFrom :: Nil, Set.empty, 0)
 }
 
 def resolveStar2(input: List[String]): Int =
-  val droplets      = parse(input)
-  val internalHoles = findInternalHoles(droplets)
-
+  val droplets = parse(input)
+  walk(droplets)
 
 // ------------------------------------------------------------------------------
 
@@ -96,8 +130,7 @@ object Puzzle18Test extends ZIOSpecDefault {
         puzzleResult   = resolveStar2(puzzleInput)
       } yield assertTrue(
         exampleResult1 == 58,
-        puzzleResult > 1651,
-        puzzleResult < 3244
+        puzzleResult == 2052
       )
     }
   ) @@ timed @@ sequential
