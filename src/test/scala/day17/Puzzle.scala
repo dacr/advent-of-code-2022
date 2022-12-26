@@ -4,6 +4,7 @@ import zio.*
 import zio.stream.*
 import zio.test.*
 import zio.test.TestAspect.*
+import scala.math.*
 
 // ------------------------------------------------------------------------------
 enum Direction {
@@ -11,7 +12,7 @@ enum Direction {
   case Right
 }
 
-case class Coord(x: Int, y: Int) {
+case class Coord(x: Long, y: Long) {
   def right = copy(x = x + 1)
   def left  = copy(x = x - 1)
   def down  = copy(y = y - 1)
@@ -51,12 +52,12 @@ def parse(input: String) =
 
 // ------------------------------------------------------------------------------
 
-def simulate(roundLimit: Int, instructions: IndexedSeq[Direction]): Int = {
+def simulate(roundLimit: Long, instructions: IndexedSeq[Direction]): Long = {
   @annotation.tailrec
-  def worker(roundIndex: Int, instructionIndex: Int, rockLeftBottom: Coord, occupied: Set[Coord]): Int = {
-    if (roundIndex >= roundLimit) occupied.map(_.y).max
+  def worker(roundIndex: Long, instructionIndex: Int, currentHighestY: Long, rockLeftBottom: Coord, occupied: Set[Coord]): Long = {
+    if (roundIndex >= roundLimit) currentHighestY
     else {
-      val fallingRock = Rock.rocks(roundIndex % Rock.rocks.length)
+      val fallingRock = Rock.rocks((roundIndex % Rock.rocks.length).toInt)
 
       val updatedX = instructions(instructionIndex % instructions.size) match {
         case Direction.Right if rockLeftBottom.x + fallingRock.width < 7 =>
@@ -70,38 +71,30 @@ def simulate(roundLimit: Int, instructions: IndexedSeq[Direction]): Int = {
         case _ => rockLeftBottom
       }
 
-      val updatedY = updatedX.down
+      val updatedY          = updatedX.down
       if (fallingRock.coords(updatedY).intersect(occupied).isEmpty)
-        worker(roundIndex, instructionIndex + 1, updatedY, occupied)
+        worker(roundIndex, instructionIndex + 1, currentHighestY, updatedY, occupied)
       else {
-        val updatedOccupied = occupied ++ fallingRock.coords(updatedX)
-        val highestY        = updatedOccupied.map(_.y).max
-        //show(occupied)
-        worker(roundIndex + 1, instructionIndex + 1, Coord(2, highestY + 4), updatedOccupied)
+        val fallingRockCoords = fallingRock.coords(updatedX)
+        val updatedOccupied = occupied ++ fallingRockCoords
+        val updatedHighestY = max(fallingRockCoords.maxBy(_.y).y, currentHighestY)
+        println(s"$roundIndex $updatedHighestY")
+        worker(roundIndex + 1, instructionIndex + 1, updatedHighestY, Coord(2, updatedHighestY + 4), updatedOccupied)
       }
     }
   }
-  worker(0, 0, Coord(2, 4), 0.to(7).map(x => Coord(x, 0)).toSet)
+  worker(0, 0, 0L, Coord(2, 4), 0.to(7).map(x => Coord(x, 0)).toSet)
 }
 
-def show(coords: Set[Coord]): Unit = {
-  val highestY = coords.map(_.y).max
-  highestY.to(0, -1).foreach { y =>
-    println(
-      0.to(6).map(x => if (coords.contains(Coord(x, y))) "#" else ".").mkString
-    )
-  }
-  println("-------")
-}
-
-def resolveStar1(input: String): Int =
+def resolveStar1(input: String): Long =
   val instructions = parse(input)
   simulate(2022, instructions)
 
 // ------------------------------------------------------------------------------
 
-def resolveStar2(input: String): Int =
-  0
+def resolveStar2(input: String): Long =
+  val instructions = parse(input)
+  simulate(1_000_000_000_000L, instructions)
 
 // ------------------------------------------------------------------------------
 
@@ -117,8 +110,8 @@ object Puzzle17Test extends ZIOSpecDefault {
         puzzleInput  <- fileContent(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult  = resolveStar1(puzzleInput)
       } yield assertTrue(
-        exampleResult == 3068,
-        puzzleResult == 3163
+        exampleResult == 3068L,
+        puzzleResult == 3163L
       )
     },
     test("star#2") {
@@ -128,8 +121,8 @@ object Puzzle17Test extends ZIOSpecDefault {
         puzzleInput   <- fileContent(Path(s"data/$day/puzzle-1.txt"))
         puzzleResult   = resolveStar2(puzzleInput)
       } yield assertTrue(
-        exampleResult1 == 0,
-        puzzleResult == 0
+        exampleResult1 == 1514285714288L,
+        puzzleResult == 0L
       )
     }
   ) @@ timed @@ sequential
