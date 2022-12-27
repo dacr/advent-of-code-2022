@@ -21,5 +21,5 @@ Solutions :
 - [day14](src/test/scala/day14/Puzzle.scala) - ok
 - [day15](src/test/scala/day15/Puzzle.scala) - ok   - ranges - requires some cleanup/refactoring - ranges functions can be generalized
 - [day16](src/test/scala/day16/Puzzle.scala) - WIP  - graphs - Travelling salesman problem detected and mandatory 14! possible solutions for star1
-- [day17](src/test/scala/day17/Puzzle.scala) - TODO
+- [day17](src/test/scala/day17/Puzzle.scala) - ok   - reusable cycle detection algorithm but requires refactoring
 - [day18](src/test/scala/day18/Puzzle.scala) - ok
